@@ -18,6 +18,11 @@ public class Values {
 		for (int i = 0; i < vals2.size(); i++)
 			v.add(vals2.get(i));
 	}
+	
+	public void add(Vector<Double> vals2) {
+		for (int i = 0; i < vals2.size(); i++)
+			v.add(vals2.elementAt(i));
+	}
 
 	public double get(int i) {
 		return v.elementAt(i);

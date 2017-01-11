@@ -1,40 +1,52 @@
 ;;
 ;; Driver PVT model : Night A
 ;; 
-(set-task "actr.tasks.drivingPVT.DrivingPVTDayA")
+(set-task "actr.tasks.CRT.CRT_8hour_shift")
 
 (set-schedule 
-    (8.0 22.0)(32.0 46.0)(56.0 70.0)(80.0 94.0)(104.0 118.0)(128.0 142.0)(152.0 166.0)
-    (176.0 190.0)(200.0 214.0)(224.0 238.0)(248.0 262.0)(272.0 286.0)(296.0 310.0)(320.0 334.0)
+    (8.0 24.0)(32.0 48.0)(56.0 72.0)(78.0 94.0)(101.0 114.0)(118.0 128)
 )
 
 (add-dm
     (goal isa goal state wait)
+    (i1 isa instruction action respond condition "TRUE" key t) 
+    (i2 isa instruction action respond condition "FALSE" key f)
 )
 
 (sgp 
-    :v nil
+    :v t
+    
+    ;; Fatigue parameters    
     :fatigue t   
     :iu 2.8
     :ut 2.3
-    
     ;;:microlapses nil
     :fpbmc .02
     :fpmc -.005
-    
     :utbmc .01  
     :utmc -.0012
-    
     :fp-dec 0.01
-    
     :egs .25
     ;:cst t
-    
     :dat .05
     :randomize-time t
     :vpft t
+    :max-prep-time-diff 10.0
     
-    :max-prep-time-diff 10.0)
+    ;; Other parameters
+    :epl t
+    :v t
+    :pct t
+    :ul t
+    :rt 0
+    :lf 0.4
+    :ans 0.5
+    :egs 0.1
+    :bll 0.5
+    :iu 10
+    :alpha 1 ;; 0.2
+    
+)
 
 (goal-focus goal)
 
@@ -71,26 +83,44 @@
 )
 ;(spp :u 1)
 
-(p see-stimulus*respond
+(p see-stimulus
     =goal>
         isa goal
         state attending-stimulus
     =visual>
         isa text
         value =val
-    ?manual>
-        state free 
+    ?retrieval>
+        state free
 ==>
     !output! (=val)
-    +manual>
-        isa press-key
-        key space
+    +retrieval>
+        isa instruction
+        condition =val
     =goal>
-        state done
+        state respond
     +visual>
         isa clear
 )
+
 ;(spp :u 1)
+
+(p respond
+    =goal>
+        isa goal
+        state respond
+    ?manual>
+        state free 
+    =retrieval>
+        isa instruction 
+        key =key
+==>
+    +manual>
+        isa press-key
+        key =key
+    =goal>
+        state done
+)
 
 (p press-key 
     =goal>

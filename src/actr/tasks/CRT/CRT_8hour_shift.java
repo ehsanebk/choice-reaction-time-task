@@ -23,7 +23,8 @@ import actr.task.*;
 public class CRT_8hour_shift extends Task {
 	private TaskLabel label;
 	private double lastTime = 0;
-	private String[] stimulus = {"TRUE", "FALSE"};
+	private String[] stimuli = {"TRUE", "FALSE"};
+	private String stimulus;
 	private double interStimulusInterval = 0.0;
 	private Boolean stimulusVisibility = false;
 	private String response = null;
@@ -64,8 +65,9 @@ public class CRT_8hour_shift extends Task {
 		int responses = 0; // number of responses, this can be diff from the
 							// stimulusIndex because of false resonces
 		double responseTotalTime = 0;
+		int reactionErrors = 0;
 		
-		Vector<Double> responceTimes = new Vector<Double>();
+		Vector<Double> responseTimes = new Vector<Double>();
 	}
 
 	public CRT_8hour_shift() {
@@ -88,7 +90,7 @@ public class CRT_8hour_shift extends Task {
 		addUpdate(1.0);
 
 		try {
-			File dataFile = new File("./model/data.txt");
+			File dataFile = new File("./results/data.txt");
 			if (!dataFile.exists())
 				dataFile.createNewFile();
 			data = new PrintStream(dataFile);
@@ -104,7 +106,8 @@ public class CRT_8hour_shift extends Task {
 		currentSession.totalSessionTime = getModel().getTime() - currentSession.startTime;
 
 		if (currentSession.stimulusIndex <= 150) {
-			label.setText(stimulus[random.nextInt(2)]);
+			stimulus = stimuli[random.nextInt(2)];
+			label.setText(stimulus);
 			label.setVisible(true);
 			processDisplay();
 			stimulusVisibility = true;
@@ -182,7 +185,14 @@ public class CRT_8hour_shift extends Task {
 
 		if (stimulusVisibility == true) {
 			response = c + "";
+			System.out.println(response);
+			
+			// handling an error reaction to stimulus
+			if ( (stimulus == "TRUE" && response != "T") || (stimulus == "FALSE" && response != "F"))
+				currentSession.reactionErrors++;
+			
 			responseTime = getModel().getTime() - lastTime;
+			currentSession.responseTimes.add(responseTime);
 
 			if (response != null) // && response.equals("spc"))
 			{
@@ -193,7 +203,7 @@ public class CRT_8hour_shift extends Task {
 			label.setVisible(false);
 			processDisplay();
 			
-			interStimulusInterval = random.nextDouble() * 8 + 1; // A random
+			interStimulusInterval = random.nextInt(4) + 2; // A random number with a range of 2-5
 			addUpdate(interStimulusInterval);
 			stimulusVisibility = false;
 
@@ -224,6 +234,8 @@ public class CRT_8hour_shift extends Task {
 	public Result analyze(Task[] tasks, boolean output) {
 		try {
 			int numberOfSessions = timesOfCRT.length;
+			Values[] totallReactionTimesValues = new Values[numberOfSessions];
+			Values[] totallReactionErrosValues = new Values[numberOfSessions];
 			Values[] totallLapsesValues = new Values[numberOfSessions];
 			Values[] totallFalseAlerts = new Values[numberOfSessions];
 			Values[] totallSleepAtacks = new Values[numberOfSessions];
@@ -239,6 +251,8 @@ public class CRT_8hour_shift extends Task {
 
 			// allocating memory to the vectors
 			for (int i = 0; i < numberOfSessions; i++) {
+				totallReactionTimesValues[i] = new Values();
+				totallReactionErrosValues[i] = new Values();
 				totallLapsesValues[i] = new Values();
 				totallFalseAlerts[i] = new Values();
 				totallSleepAtacks[i] = new Values();
@@ -257,6 +271,8 @@ public class CRT_8hour_shift extends Task {
 			for (Task taskCast : tasks) {
 				CRT_8hour_shift task = (CRT_8hour_shift) taskCast;
 				for (int i = 0; i < numberOfSessions; i++) {
+					totallReactionTimesValues[i].add(task.sessions.elementAt(i).responseTimes);
+					totallReactionErrosValues[i].add(task.sessions.elementAt(i).reactionErrors);
 					totallFalseAlerts[i].add(task.sessions.elementAt(i).falseStarts);
 					totallLapsesValues[i].add(task.sessions.get(i).lapses);
 					totallSleepAtacks[i].add(task.sessions.get(i).sleepAttacks);
@@ -283,49 +299,26 @@ public class CRT_8hour_shift extends Task {
 
 			DecimalFormat df3 = new DecimalFormat("#.000");
 
-			// getModel().output("******* Proportion of Responses
-			// **********\n");
-			// getModel()
-			// .output("#\tFS "
-			// + " --------------------------- Alert Responses
-			// --------------------------- "
-			// + " Alert Responses "
-			// + " --------------------------- Alert Responses
-			// ---------------------------- "
-			// + "L SA");
+			getModel().output("*******    Choice Reaction Time    **********");
+			getModel().output("\tTimePoint" + "\tRT(msec)" + "\tSTD\t" + "\tNo. Erros" + "\tSTD");
 
-			getModel().output("******* Average Proportion of Responses **********\n");
-			getModel().output("#\tFS\t" + "AR\t " + "L\t" + "SA");
-
-			// double[] AlertResponsesProportion = new double[35];
-			for (int s = 0; s < numberOfSessions; s++) {
-				// for (int i = 0; i < 35; i++)
-				// AlertResponsesProportion[i] =
-				// totallProportionAlertResponcesSpread[s][i].mean();
-
-				getModel().output(s + "\t" + df3.format(totallProportionFalseAlerts[s].mean()) + "\t"
-				// + Utilities.toString(AlertResponsesProportion) + " "
-						+ df3.format(totallProportionAlertRresponces[s].mean()) + "\t"
-						+ df3.format(totallProportionLapsesValues[s].mean()) + "\t"
-						+ df3.format(totallProportionSleepAtacks[s].mean()));
+			int s =0;
+			while(s < numberOfSessions) {
+				
+				getModel().output("\t"+ (s%3+1)+ "       \t" + df3.format(totallReactionTimesValues[s].mean()) + 
+						"    \t" + df3.format(totallReactionTimesValues[s].stddev()) + "\t" + 
+						"\t" + df3.format(totallReactionErrosValues[s].mean()) +
+						"   \t" + df3.format(totallReactionErrosValues[s].stddev()) );
+				s++;
+				if ((s%3) == 0)
+					getModel().output("");
+			
 			}
 
-			getModel().output("\nAverage Number of lapses in the time points \n");
-			getModel().output("Day\t21:00\t00:00\t03:00\t06:00 ");
-			for (int i = 0; i < 5; i++) {
-				getModel().output((i + 2) + "\t" + totallLapsesValues[i * 4].mean() + "\t"
-						+ totallLapsesValues[i * 4 + 1].mean() + "\t" + totallLapsesValues[i * 4 + 2].mean() + "\t"
-						+ totallLapsesValues[i * 4 + 3].mean());
-			}
-			getModel().output("* 34 h break *");
-			for (int i = 5; i < 10; i++) {
-				getModel().output((i + 4) + "\t" + totallLapsesValues[i * 4].mean() + "\t"
-						+ totallLapsesValues[i * 4 + 1].mean() + "\t" + totallLapsesValues[i * 4 + 2].mean() + "\t"
-						+ totallLapsesValues[i * 4 + 3].mean());
-			}
+			
 			getModel().output("\n*******************************************\n");
 
-			File dataFile = new File("./result/BioMathValuesDayA.txt");
+			File dataFile = new File("./results/BioMathValues.txt");
 			if (!dataFile.exists())
 				dataFile.createNewFile();
 			PrintStream data = new PrintStream(dataFile);
