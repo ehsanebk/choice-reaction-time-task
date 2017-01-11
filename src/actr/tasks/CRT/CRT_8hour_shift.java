@@ -10,12 +10,12 @@ import actr.model.Symbol;
 import actr.task.*;
 
 /**
- * Model of PVT test and Fatigue mechanism
+ * Model of Choice Reaction Time and Fatigue mechanism
  * 
- * Paper: Efficient driver drowsiness detection at moderate levels of drowsiness
+ * Paper: Some effects of 8- vs. 10-hour work schedules on the test performance/alertness 
+ *        of air traffic control specialists
  * 
- * Pia M. Forsmana, Bryan J. Vilaa,b, Robert A. Short c, Christopher G. Mott d,
- * Hans P.A. Van Dongena,
+ * David J. Schroeder, Roger R. Rosa, L. Alan Witt
  * 
  * @author Ehsan Khosroshahi
  */
@@ -23,28 +23,24 @@ import actr.task.*;
 public class CRT_8hour_shift extends Task {
 	private TaskLabel label;
 	private double lastTime = 0;
-	private String stimulus = "\u2588";
+	private String[] stimulus = {"TRUE", "FALSE"};
 	private double interStimulusInterval = 0.0;
 	private Boolean stimulusVisibility = false;
 	private String response = null;
 	private double responseTime = 0;
 	// the following two variables are for handling sleep attacks
 	private int sleepAttackIndex = 0;
+	
+	Random random = new Random();
 
-	private double[] timesOfPVT = {
-			//
-			57.0, 60.0, 63.0, 66.0, // day2
-			81.0, 84.0, 87.0, 90.0, // day3
-			105.0, 108.0, 111.0, 114.0, // day4
-			129.0, 132.0, 135.0, 138.0, // day5
-			153.0, 156.0, 159.0, 162.0, // day6
-
-			201.0, 204.0, 207.0, 210.0, // day9
-			225.0, 228.0, 231.0, 234.0, // day10
-			249.0, 252.0, 255.0, 258.0, // day11
-			273.0, 276.0, 279.0, 282.0, // day12
-			297.0, 300.0, 303.0, 306.0 // day13
-
+	private double[] timesOfCRT = {
+			//time points
+			//---1-----  -----2----- -----3-----
+			14.0 + 24  , 20.0 + 24  , 22.0 +24  , // day1
+			14.0 + 24*2, 20.0 + 24*2, 22.0 +24*2, // day2
+			7.0  + 24*3, 13.0 + 24*3, 15.0 +24*3, // day3
+			6.0  + 24*4, 12.0 + 24*4, 14.0 +24*4, // day4
+			22.0 + 24*4, 4.0  + 24*5, 6.0  +24*5, // day5
 	};
 	int sessionNumber = 0; // starts from 0
 	private Session currentSession;
@@ -53,7 +49,7 @@ public class CRT_8hour_shift extends Task {
 	@SuppressWarnings("unused")
 	private PrintStream data;
 
-	class Session {
+	private class Session {
 		double startTime = 0;
 		int falseStarts = 0;
 		int alertRosponses = 0;
@@ -68,6 +64,8 @@ public class CRT_8hour_shift extends Task {
 		int responses = 0; // number of responses, this can be diff from the
 							// stimulusIndex because of false resonces
 		double responseTotalTime = 0;
+		
+		Vector<Double> responceTimes = new Vector<Double>();
 	}
 
 	public CRT_8hour_shift() {
@@ -84,7 +82,7 @@ public class CRT_8hour_shift extends Task {
 		currentSession = new Session();
 		stimulusVisibility = false;
 
-		getModel().getFatigue().setFatigueHour(timesOfPVT[sessionNumber]);
+		getModel().getFatigue().setFatigueHour(timesOfCRT[sessionNumber]);
 		getModel().getFatigue().startFatigueSession();
 
 		addUpdate(1.0);
@@ -105,8 +103,8 @@ public class CRT_8hour_shift extends Task {
 	public void update(double time) {
 		currentSession.totalSessionTime = getModel().getTime() - currentSession.startTime;
 
-		if (currentSession.totalSessionTime <= 600.0) {
-			label.setText(stimulus);
+		if (currentSession.stimulusIndex <= 150) {
+			label.setText(stimulus[random.nextInt(2)]);
 			label.setVisible(true);
 			processDisplay();
 			stimulusVisibility = true;
@@ -152,7 +150,7 @@ public class CRT_8hour_shift extends Task {
 			sessionNumber++;
 			getModel().getDeclarative().get(Symbol.get("goal")).set(Symbol.get("state"), Symbol.get("none"));
 			// go to the next session or stop the model
-			if (sessionNumber < timesOfPVT.length) {
+			if (sessionNumber < timesOfCRT.length) {
 				addEvent(new Event(getModel().getTime() + 60.0, "task", "update") {
 					@Override
 					public void action() {
@@ -161,7 +159,7 @@ public class CRT_8hour_shift extends Task {
 						stimulusVisibility = false;
 						sleepAttackIndex = 0;
 						currentSession.startTime = getModel().getTime();
-						getModel().getFatigue().setFatigueHour(timesOfPVT[sessionNumber]);
+						getModel().getFatigue().setFatigueHour(timesOfCRT[sessionNumber]);
 						// System.out.println(sessionNumber +" : "+
 						// getModel().getFatigue().computeBioMathValueForHour());
 						getModel().getFatigue().startFatigueSession();
@@ -194,8 +192,7 @@ public class CRT_8hour_shift extends Task {
 
 			label.setVisible(false);
 			processDisplay();
-
-			Random random = new Random();
+			
 			interStimulusInterval = random.nextDouble() * 8 + 1; // A random
 			addUpdate(interStimulusInterval);
 			stimulusVisibility = false;
@@ -226,7 +223,7 @@ public class CRT_8hour_shift extends Task {
 	@Override
 	public Result analyze(Task[] tasks, boolean output) {
 		try {
-			int numberOfSessions = timesOfPVT.length;
+			int numberOfSessions = timesOfCRT.length;
 			Values[] totallLapsesValues = new Values[numberOfSessions];
 			Values[] totallFalseAlerts = new Values[numberOfSessions];
 			Values[] totallSleepAtacks = new Values[numberOfSessions];
@@ -333,7 +330,7 @@ public class CRT_8hour_shift extends Task {
 				dataFile.createNewFile();
 			PrintStream data = new PrintStream(dataFile);
 
-			for (int h = 0; h < timesOfPVT[timesOfPVT.length - 1]; h++) {
+			for (int h = 0; h < timesOfCRT[timesOfCRT.length - 1]; h++) {
 				data.println(h + "\t" + df3.format(getModel().getFatigue().getBioMathModelValueforHour(h)));
 			}
 
