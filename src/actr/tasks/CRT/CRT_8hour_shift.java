@@ -10,7 +10,7 @@ import actr.model.Symbol;
 import actr.task.*;
 
 /**
- * Model of Choice Reaction Time and Fatigue mechanism
+ * Model of Choice Reaction Time and fatigue mechanism
  * 
  * Paper: Some effects of 8- vs. 10-hour work schedules on the test performance/alertness 
  *        of air traffic control specialists
