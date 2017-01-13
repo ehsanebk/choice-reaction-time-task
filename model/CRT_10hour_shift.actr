@@ -4,7 +4,7 @@
 (set-task "actr.tasks.CRT.CRT_10hour_shift")
 
 (set-schedule 
-    (8.0 24.0)(32.0 49.0)(58.0 72.0)(79.0 93.0)(101.0 114.0)
+    (8.0 24.0)(32.0 49.0)(58.0 72.0)(79.0 93.0)(101.0 114.0)(126.0 142)
 )
 
 (add-dm
@@ -81,16 +81,32 @@
     ?manual>
         state free 
 ==>
-    !output! (=val)
+        ;;!output! (=val)
     +manual>
         isa press-key
         key "t"
     =goal>
         state done
 )
-
 ;(spp :u 1)
-
+(p see-stimulus*respond-true-ERROR
+    =goal>
+        isa goal
+        state attending-stimulus
+    =visual>
+        isa text
+        value "TRUE"
+    ?manual>
+        state free 
+==>
+        ;;!output! (=val)
+    +manual>
+        isa press-key
+        key "f"
+    =goal>
+        state done
+)
+(spp :u 1.3)
 
 (p see-stimulus*respond-false
     =goal>
@@ -102,17 +118,36 @@
     ?manual>
         state free 
 ==>
-    !output! (=val)
+        ;;!output! (=val)
     +manual>
         isa press-key
         key "f"
     =goal>
         state done
 )
-
-(p press-key 
+(p see-stimulus*respond-false-ERROR
     =goal>
         isa goal
+        state attending-stimulus
+    =visual>
+        isa text
+        value "FALSE"
+    ?manual>
+        state free 
+==>
+        ;;!output! (=val)
+    +manual>
+        isa press-key
+        key "t"
+    =goal>
+        state done
+)
+(spp :u 1.3)
+
+;;;;; not being currrently used
+(p press-key-true
+    =goal>
+        isa goalll
         ;state wait
     ?manual>
         state free 
@@ -120,9 +155,25 @@
     !output! ("***  press Key - False Start  ***")
     +manual>
         isa press-key
-        key space
+        key t
     =goal>
         state wait
 )
 (spp :u 0)
 
+(p press-key-false
+    =goal>
+        isa goallll
+        ;state wait
+    ?manual>
+        state free 
+==>
+    !output! ("***  press Key - False Start  ***")
+    +manual>
+        isa press-key
+        key f
+    =goal>
+        state wait
+)
+
+(spp :u 0)

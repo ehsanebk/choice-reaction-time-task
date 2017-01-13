@@ -325,13 +325,16 @@ public class CRT_8hour_shift extends Task {
 			
 			getModel().output("\n*******************************************\n");
 
-			File dataFile = new File("./results/BioMathValues.txt");
+			File dataFile = new File("./results/BioMathValues8hour.txt");
 			if (!dataFile.exists())
 				dataFile.createNewFile();
 			PrintStream data = new PrintStream(dataFile);
 
 			for (int h = 0; h < timesOfCRT[timesOfCRT.length - 1]; h++) {
-				data.println(h + "\t" + df3.format(getModel().getFatigue().getBioMathModelValueforHour(h)));
+				data.print((h+1) + "\t" + df3.format(getModel().getFatigue().getBioMathModelValueforHour(h)));
+				if (contains(timesOfCRT, h * 1.0))
+					data.print("\t"+10);
+				data.print("\n");
 			}
 
 			data.close();
@@ -341,6 +344,13 @@ public class CRT_8hour_shift extends Task {
 		}
 		Result result = new Result();
 		return result;
+	}
+	private static boolean contains(double[] arr, double targetValue) {
+		for(Double s: arr){
+			if(s.equals(targetValue))
+				return true;
+		}
+		return false;
 	}
 
 }
