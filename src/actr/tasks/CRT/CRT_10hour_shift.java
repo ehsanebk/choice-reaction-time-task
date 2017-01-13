@@ -12,7 +12,7 @@ import actr.task.*;
 
 
 /**
- * Model of PVT test and Fatigue mechanism
+ * Model of PVT test and fatigue mechanism
  * 
  * Paper: Efficient driver drowsiness detection at moderate levels of drowsiness
  * 
