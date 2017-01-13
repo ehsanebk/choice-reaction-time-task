@@ -185,10 +185,11 @@ public class CRT_8hour_shift extends Task {
 
 		if (stimulusVisibility == true) {
 			response = c + "";
-			System.out.println(response);
 			
 			// handling an error reaction to stimulus
-			if ( (stimulus == "TRUE" && response != "T") || (stimulus == "FALSE" && response != "F"))
+			if ( stimulus == "TRUE" && !response.contains("t"))
+				currentSession.reactionErrors++;
+			if ( stimulus == "FALSE" && !response.contains("f"))
 				currentSession.reactionErrors++;
 			
 			responseTime = getModel().getTime() - lastTime;
@@ -230,6 +231,11 @@ public class CRT_8hour_shift extends Task {
 
 	}
 
+	public int analysisIterations ()
+	{
+		return 100;
+	}
+	
 	@Override
 	public Result analyze(Task[] tasks, boolean output) {
 		try {
@@ -300,7 +306,7 @@ public class CRT_8hour_shift extends Task {
 			DecimalFormat df3 = new DecimalFormat("#.000");
 
 			getModel().output("*******    Choice Reaction Time    **********");
-			getModel().output("\tTimePoint" + "\tRT(msec)" + "\tSTD\t" + "\tNo. Erros" + "\tSTD");
+			getModel().output("\tTimePoint" + "\tRT(msec)" + "\tSTD\t" + "\tNo. Erros" + "\tSTD\t" +"\tNo. falseStarts" );
 
 			int s =0;
 			while(s < numberOfSessions) {
@@ -308,7 +314,8 @@ public class CRT_8hour_shift extends Task {
 				getModel().output("\t"+ (s%3+1)+ "       \t" + df3.format(totallReactionTimesValues[s].mean()) + 
 						"    \t" + df3.format(totallReactionTimesValues[s].stddev()) + "\t" + 
 						"\t" + df3.format(totallReactionErrosValues[s].mean()) +
-						"   \t" + df3.format(totallReactionErrosValues[s].stddev()) );
+						"     \t" + df3.format(totallReactionErrosValues[s].stddev()) + "\t" +
+						"\t" + totallFalseAlerts[s].mean());
 				s++;
 				if ((s%3) == 0)
 					getModel().output("");

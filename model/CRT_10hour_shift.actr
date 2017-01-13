@@ -1,10 +1,10 @@
 ;;
-;; CRT model : 8hour shift
+;; CRT model : 10 hour shift
 ;; 
-(set-task "actr.tasks.CRT.CRT_8hour_shift")
+(set-task "actr.tasks.CRT.CRT_10hour_shift")
 
 (set-schedule 
-    (8.0 24.0)(32.0 48.0)(56.0 72.0)(78.0 94.0)(101.0 114.0)(118.0 128)
+    (8.0 24.0)(32.0 49.0)(58.0 72.0)(79.0 93.0)(101.0 114.0)
 )
 
 (add-dm
@@ -81,7 +81,7 @@
     ?manual>
         state free 
 ==>
-        ;;!output! (=val)
+    !output! (=val)
     +manual>
         isa press-key
         key "t"
@@ -102,7 +102,7 @@
     ?manual>
         state free 
 ==>
-        ;;!output! (=val)
+    !output! (=val)
     +manual>
         isa press-key
         key "f"
@@ -110,11 +110,9 @@
         state done
 )
 
-
-;;;;; not being currrently used
-(p press-key-true
+(p press-key 
     =goal>
-        isa goalll
+        isa goal
         ;state wait
     ?manual>
         state free 
@@ -122,26 +120,9 @@
     !output! ("***  press Key - False Start  ***")
     +manual>
         isa press-key
-        key t
+        key space
     =goal>
         state wait
 )
-(spp :u 0)
-
-(p press-key-false
-    =goal>
-        isa goallll
-        ;state wait
-    ?manual>
-        state free 
-==>
-    !output! ("***  press Key - False Start  ***")
-    +manual>
-        isa press-key
-        key f
-    =goal>
-        state wait
-)
-
 (spp :u 0)
 

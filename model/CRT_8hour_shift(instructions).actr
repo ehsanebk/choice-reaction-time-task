@@ -1,5 +1,5 @@
 ;;
-;; CRT model : 8hour shift
+;; Driver PVT model : Night A
 ;; 
 (set-task "actr.tasks.CRT.CRT_8hour_shift")
 
@@ -14,7 +14,7 @@
 )
 
 (sgp 
-    :v nil
+    :v t
     
     ;; Fatigue parameters    
     :fatigue t   
@@ -33,6 +33,18 @@
     :vpft t
     :max-prep-time-diff 10.0
     
+    ;; Other parameters
+    :epl t
+    :v t
+    :pct t
+    :ul t
+    :rt 0
+    :lf 0.4
+    :ans 0.5
+    :egs 0.1
+    :bll 0.5
+    :iu 10
+    :alpha 1 ;; 0.2
     
 )
 
@@ -71,50 +83,48 @@
 )
 ;(spp :u 1)
 
-(p see-stimulus*respond-true
+(p see-stimulus
     =goal>
         isa goal
         state attending-stimulus
     =visual>
         isa text
-        value "TRUE"
-    ?manual>
-        state free 
+        value =val
+    ?retrieval>
+        state free
 ==>
-        ;;!output! (=val)
-    +manual>
-        isa press-key
-        key "t"
+    !output! (=val)
+    +retrieval>
+        isa instruction
+        condition =val
     =goal>
-        state done
+        state respond
+    +visual>
+        isa clear
 )
 
 ;(spp :u 1)
 
-
-(p see-stimulus*respond-false
+(p respond
     =goal>
         isa goal
-        state attending-stimulus
-    =visual>
-        isa text
-        value "FALSE"
+        state respond
     ?manual>
         state free 
+    =retrieval>
+        isa instruction 
+        key =key
 ==>
-        ;;!output! (=val)
     +manual>
         isa press-key
-        key "f"
+        key =key
     =goal>
         state done
 )
 
-
-;;;;; not being currrently used
-(p press-key-true
+(p press-key 
     =goal>
-        isa goalll
+        isa goal
         ;state wait
     ?manual>
         state free 
@@ -122,26 +132,9 @@
     !output! ("***  press Key - False Start  ***")
     +manual>
         isa press-key
-        key t
+        key space
     =goal>
         state wait
 )
-(spp :u 0)
-
-(p press-key-false
-    =goal>
-        isa goallll
-        ;state wait
-    ?manual>
-        state free 
-==>
-    !output! ("***  press Key - False Start  ***")
-    +manual>
-        isa press-key
-        key f
-    =goal>
-        state wait
-)
-
 (spp :u 0)
 

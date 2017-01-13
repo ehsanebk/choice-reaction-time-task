@@ -9,6 +9,7 @@ import actr.model.Event;
 import actr.model.Symbol;
 import actr.task.*;
 
+
 /**
  * Model of PVT test and Fatigue mechanism
  * 
@@ -23,28 +24,24 @@ import actr.task.*;
 public class CRT_10hour_shift extends Task {
 	private TaskLabel label;
 	private double lastTime = 0;
-	private String stimulus = "\u2588";
+	private String[] stimuli = {"TRUE", "FALSE"};
+	private String stimulus;
 	private double interStimulusInterval = 0.0;
 	private Boolean stimulusVisibility = false;
 	private String response = null;
 	private double responseTime = 0;
 	// the following two variables are for handling sleep attacks
 	private int sleepAttackIndex = 0;
+	
+	Random random = new Random();
 
-	private double[] timesOfPVT = {
-			//
-			57.0, 60.0, 63.0, 66.0, // day2
-			81.0, 84.0, 87.0, 90.0, // day3
-			105.0, 108.0, 111.0, 114.0, // day4
-			129.0, 132.0, 135.0, 138.0, // day5
-			153.0, 156.0, 159.0, 162.0, // day6
-
-			201.0, 204.0, 207.0, 210.0, // day9
-			225.0, 228.0, 231.0, 234.0, // day10
-			249.0, 252.0, 255.0, 258.0, // day11
-			273.0, 276.0, 279.0, 282.0, // day12
-			297.0, 300.0, 303.0, 306.0 // day13
-
+	private double[] timesOfCRT = {
+			//time points
+			//---1-----  -----2----- -----3-----
+			14.0 + 24  , 22.0 + 24  , 24.0 +24  , // day1
+			12.0 + 24*2, 20.0 + 24*2, 22.0 +24*2, // day2
+			9.0  + 24*3, 17.0 + 24*3, 19.0 +24*3, // day3
+			6.0  + 24*4, 14.0 + 24*4, 16.0 +24*4, // day4
 	};
 	int sessionNumber = 0; // starts from 0
 	private Session currentSession;
@@ -53,7 +50,7 @@ public class CRT_10hour_shift extends Task {
 	@SuppressWarnings("unused")
 	private PrintStream data;
 
-	class Session {
+	private class Session {
 		double startTime = 0;
 		int falseStarts = 0;
 		int alertRosponses = 0;
@@ -68,6 +65,9 @@ public class CRT_10hour_shift extends Task {
 		int responses = 0; // number of responses, this can be diff from the
 							// stimulusIndex because of false resonces
 		double responseTotalTime = 0;
+		int reactionErrors = 0;
+		
+		Vector<Double> responseTimes = new Vector<Double>();
 	}
 
 	public CRT_10hour_shift() {
@@ -84,13 +84,13 @@ public class CRT_10hour_shift extends Task {
 		currentSession = new Session();
 		stimulusVisibility = false;
 
-		getModel().getFatigue().setFatigueHour(timesOfPVT[sessionNumber]);
+		getModel().getFatigue().setFatigueHour(timesOfCRT[sessionNumber]);
 		getModel().getFatigue().startFatigueSession();
 
 		addUpdate(1.0);
 
 		try {
-			File dataFile = new File("./model/data.txt");
+			File dataFile = new File("./results/data.txt");
 			if (!dataFile.exists())
 				dataFile.createNewFile();
 			data = new PrintStream(dataFile);
@@ -105,7 +105,8 @@ public class CRT_10hour_shift extends Task {
 	public void update(double time) {
 		currentSession.totalSessionTime = getModel().getTime() - currentSession.startTime;
 
-		if (currentSession.totalSessionTime <= 600.0) {
+		if (currentSession.stimulusIndex <= 150) {
+			stimulus = stimuli[random.nextInt(2)];
 			label.setText(stimulus);
 			label.setVisible(true);
 			processDisplay();
@@ -152,7 +153,7 @@ public class CRT_10hour_shift extends Task {
 			sessionNumber++;
 			getModel().getDeclarative().get(Symbol.get("goal")).set(Symbol.get("state"), Symbol.get("none"));
 			// go to the next session or stop the model
-			if (sessionNumber < timesOfPVT.length) {
+			if (sessionNumber < timesOfCRT.length) {
 				addEvent(new Event(getModel().getTime() + 60.0, "task", "update") {
 					@Override
 					public void action() {
@@ -161,7 +162,7 @@ public class CRT_10hour_shift extends Task {
 						stimulusVisibility = false;
 						sleepAttackIndex = 0;
 						currentSession.startTime = getModel().getTime();
-						getModel().getFatigue().setFatigueHour(timesOfPVT[sessionNumber]);
+						getModel().getFatigue().setFatigueHour(timesOfCRT[sessionNumber]);
 						// System.out.println(sessionNumber +" : "+
 						// getModel().getFatigue().computeBioMathValueForHour());
 						getModel().getFatigue().startFatigueSession();
@@ -184,7 +185,13 @@ public class CRT_10hour_shift extends Task {
 
 		if (stimulusVisibility == true) {
 			response = c + "";
+			
+			// handling an error reaction to stimulus
+			if ( (stimulus == "TRUE" && response != "t") || (stimulus == "FALSE" && response != "f"))
+				currentSession.reactionErrors++;
+			
 			responseTime = getModel().getTime() - lastTime;
+			currentSession.responseTimes.add(responseTime);
 
 			if (response != null) // && response.equals("spc"))
 			{
@@ -194,9 +201,8 @@ public class CRT_10hour_shift extends Task {
 
 			label.setVisible(false);
 			processDisplay();
-
-			Random random = new Random();
-			interStimulusInterval = random.nextDouble() * 8 + 1; // A random
+			
+			interStimulusInterval = random.nextInt(4) + 2; // A random number with a range of 2-5
 			addUpdate(interStimulusInterval);
 			stimulusVisibility = false;
 
@@ -222,11 +228,17 @@ public class CRT_10hour_shift extends Task {
 		}
 
 	}
+	public int analysisIterations ()
+	{
+		return 100;
+	}
 
 	@Override
 	public Result analyze(Task[] tasks, boolean output) {
 		try {
-			int numberOfSessions = timesOfPVT.length;
+			int numberOfSessions = timesOfCRT.length;
+			Values[] totallReactionTimesValues = new Values[numberOfSessions];
+			Values[] totallReactionErrosValues = new Values[numberOfSessions];
 			Values[] totallLapsesValues = new Values[numberOfSessions];
 			Values[] totallFalseAlerts = new Values[numberOfSessions];
 			Values[] totallSleepAtacks = new Values[numberOfSessions];
@@ -242,6 +254,8 @@ public class CRT_10hour_shift extends Task {
 
 			// allocating memory to the vectors
 			for (int i = 0; i < numberOfSessions; i++) {
+				totallReactionTimesValues[i] = new Values();
+				totallReactionErrosValues[i] = new Values();
 				totallLapsesValues[i] = new Values();
 				totallFalseAlerts[i] = new Values();
 				totallSleepAtacks[i] = new Values();
@@ -260,6 +274,8 @@ public class CRT_10hour_shift extends Task {
 			for (Task taskCast : tasks) {
 				CRT_10hour_shift task = (CRT_10hour_shift) taskCast;
 				for (int i = 0; i < numberOfSessions; i++) {
+					totallReactionTimesValues[i].add(task.sessions.elementAt(i).responseTimes);
+					totallReactionErrosValues[i].add(task.sessions.elementAt(i).reactionErrors);
 					totallFalseAlerts[i].add(task.sessions.elementAt(i).falseStarts);
 					totallLapsesValues[i].add(task.sessions.get(i).lapses);
 					totallSleepAtacks[i].add(task.sessions.get(i).sleepAttacks);
@@ -286,54 +302,31 @@ public class CRT_10hour_shift extends Task {
 
 			DecimalFormat df3 = new DecimalFormat("#.000");
 
-			// getModel().output("******* Proportion of Responses
-			// **********\n");
-			// getModel()
-			// .output("#\tFS "
-			// + " --------------------------- Alert Responses
-			// --------------------------- "
-			// + " Alert Responses "
-			// + " --------------------------- Alert Responses
-			// ---------------------------- "
-			// + "L SA");
+			getModel().output("*******    Choice Reaction Time    **********");
+			getModel().output("\tTimePoint" + "\tRT(msec)" + "\tSTD\t" + "\tNo. Erros" + "\tSTD");
 
-			getModel().output("******* Average Proportion of Responses **********\n");
-			getModel().output("#\tFS\t" + "AR\t " + "L\t" + "SA");
-
-			// double[] AlertResponsesProportion = new double[35];
-			for (int s = 0; s < numberOfSessions; s++) {
-				// for (int i = 0; i < 35; i++)
-				// AlertResponsesProportion[i] =
-				// totallProportionAlertResponcesSpread[s][i].mean();
-
-				getModel().output(s + "\t" + df3.format(totallProportionFalseAlerts[s].mean()) + "\t"
-				// + Utilities.toString(AlertResponsesProportion) + " "
-						+ df3.format(totallProportionAlertRresponces[s].mean()) + "\t"
-						+ df3.format(totallProportionLapsesValues[s].mean()) + "\t"
-						+ df3.format(totallProportionSleepAtacks[s].mean()));
+			int s =0;
+			while(s < numberOfSessions) {
+				
+				getModel().output("\t"+ (s%3+1)+ "       \t" + df3.format(totallReactionTimesValues[s].mean()) + 
+						"    \t" + df3.format(totallReactionTimesValues[s].stddev()) + "\t" + 
+						"\t" + df3.format(totallReactionErrosValues[s].mean()) +
+						"   \t" + df3.format(totallReactionErrosValues[s].stddev()) );
+				s++;
+				if ((s%3) == 0)
+					getModel().output("");
+			
 			}
 
-			getModel().output("\nAverage Number of lapses in the time points \n");
-			getModel().output("Day\t21:00\t00:00\t03:00\t06:00 ");
-			for (int i = 0; i < 5; i++) {
-				getModel().output((i + 2) + "\t" + totallLapsesValues[i * 4].mean() + "\t"
-						+ totallLapsesValues[i * 4 + 1].mean() + "\t" + totallLapsesValues[i * 4 + 2].mean() + "\t"
-						+ totallLapsesValues[i * 4 + 3].mean());
-			}
-			getModel().output("* 34 h break *");
-			for (int i = 5; i < 10; i++) {
-				getModel().output((i + 4) + "\t" + totallLapsesValues[i * 4].mean() + "\t"
-						+ totallLapsesValues[i * 4 + 1].mean() + "\t" + totallLapsesValues[i * 4 + 2].mean() + "\t"
-						+ totallLapsesValues[i * 4 + 3].mean());
-			}
+			
 			getModel().output("\n*******************************************\n");
 
-			File dataFile = new File("./result/BioMathValuesDayA.txt");
+			File dataFile = new File("./results/BioMathValues.txt");
 			if (!dataFile.exists())
 				dataFile.createNewFile();
 			PrintStream data = new PrintStream(dataFile);
 
-			for (int h = 0; h < timesOfPVT[timesOfPVT.length - 1]; h++) {
+			for (int h = 0; h < timesOfCRT[timesOfCRT.length - 1]; h++) {
 				data.println(h + "\t" + df3.format(getModel().getFatigue().getBioMathModelValueforHour(h)));
 			}
 
