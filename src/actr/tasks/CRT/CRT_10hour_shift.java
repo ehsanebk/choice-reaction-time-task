@@ -331,7 +331,7 @@ public class CRT_10hour_shift extends Task {
 			PrintStream data = new PrintStream(dataFile);
 
 			data.println("hr\tBioMath\ttest\tsleep");
-			for (int h = 0; h < timesOfCRT[timesOfCRT.length - 1]; h++) {
+			for (int h = 0; h < timesOfCRT[timesOfCRT.length-1]+5; h++) {
 				data.print((h) + "\t" + df3.format(getModel().getFatigue().getBioMathModelValueforHour(h)));
 				data.print("\t");
 				if (contains(timesOfCRT, h * 1.0))
