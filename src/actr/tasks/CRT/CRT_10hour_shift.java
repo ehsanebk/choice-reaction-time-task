@@ -331,14 +331,14 @@ public class CRT_10hour_shift extends Task {
 			PrintStream data = new PrintStream(dataFile);
 
 			data.println("hr\tBioMath\ttest\tsleep");
-			for (int h = 0; h < timesOfCRT[timesOfCRT.length-1]+5; h++) {
+			for (double h = 0; h < timesOfCRT[timesOfCRT.length-1]+5; h+=0.5) {
 				data.print((h) + "\t" + df3.format(getModel().getFatigue().getBioMathModelValueforHour(h)));
 				data.print("\t");
-				if (contains(timesOfCRT, h * 1.0))
-					data.print(12);
+				if (contains(timesOfCRT, h))
+					data.print(14);
 				data.print("\t");
 				if (getModel().getFatigue().isSleep(h))
-					data.print(12);
+					data.print(14);
 				data.print("\n");
 			}
 
