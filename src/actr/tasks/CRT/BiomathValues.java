@@ -20,7 +20,7 @@ import actr.task.*;
  * @author Ehsan Khosroshahi
  */
 
-public class CRT_8hour_shift extends Task {
+public class BiomathValues extends Task {
 	private TaskLabel label;
 	private double lastTime = 0;
 	private String[] stimuli = {"TRUE", "FALSE"};
@@ -71,7 +71,7 @@ public class CRT_8hour_shift extends Task {
 		Vector<Double> responseTimes = new Vector<Double>();
 	}
 
-	public CRT_8hour_shift() {
+	public BiomathValues() {
 		super();
 		label = new TaskLabel("", 200, 150, 40, 20);
 		add(label);
@@ -276,7 +276,7 @@ public class CRT_8hour_shift extends Task {
 			}
 
 			for (Task taskCast : tasks) {
-				CRT_8hour_shift task = (CRT_8hour_shift) taskCast;
+				BiomathValues task = (BiomathValues) taskCast;
 				for (int i = 0; i < numberOfSessions; i++) {
 					totallReactionTimesValues[i].add(task.sessions.elementAt(i).responseTimes);
 					totallReactionErrosValues[i].add(task.sessions.elementAt(i).reactionErrors);
